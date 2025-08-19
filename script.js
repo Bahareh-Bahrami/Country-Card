@@ -3,10 +3,6 @@
 const btn = document.querySelector('.btn-country');
 const countriesContainer = document.querySelector('.countries');
 
-// https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}
-
-///////////////////////////////////////
-
 const renderCountry = function (data, className = '') {
   const html = `
   <article class="country ${className}">
@@ -24,37 +20,69 @@ const renderCountry = function (data, className = '') {
           </div>
         </article>`;
   countriesContainer.insertAdjacentHTML('beforeend', html);
-  countriesContainer.style.opacity = 1;
 };
 
-const getCountryAndNeighbour = function (country) {
-  //AJAX Call Country 1
-  const request = new XMLHttpRequest();
-  request.open('GET', `https://restcountries.com/v2/name/${country}`);
-  request.send();
+const renderError = function (msg) {
+  countriesContainer.insertAdjacentText('beforeend', msg);
+};
+// https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}
 
-  request.addEventListener('load', function () {
-    const [data] = JSON.parse(this.responseText);
-    console.log(data);
+///////////////////////////////////////
 
-    //Render Country 1
-    renderCountry(data);
+const getCountry = function (country) {
+  fetch(`https://restcountries.com/v2/name/${country}`)
+    .then(response => response.json())
+    .then(data => {
+      renderCountry(data[0]);
+      const neighbour = data[0].borders?.[0];
+      if (!neighbour) return;
 
-    //Render Country 2
-    const neighbour = data.borders?.[0];
-    if (!neighbour) return;
-
-    const request2 = new XMLHttpRequest();
-    request2.open('GET', `https://restcountries.com/v2/alpha/${neighbour}`);
-    request2.send();
-
-    request2.addEventListener('load', function () {
-      const data2 = JSON.parse(this.responseText);
-      console.log(data2);
-
-      renderCountry(data2, 'neighbour');
+      return fetch(`https://restcountries.com/v2/alpha/${neighbour}`);
+    })
+    .then(response => response.json())
+    .then(data => {
+      return renderCountry(data, 'neighbour');
+    })
+    .catch(err => {
+      console.log(`${err}`);
+      renderError(`Something went wrong! ${err.message}. Try again!`);
+    })
+    .finally(() => {
+      countriesContainer.style.opacity = 1;
     });
-  });
 };
 
-getCountryAndNeighbour('Germany');
+btn.addEventListener('click', function () {
+  getCountry('Germany');
+});
+// const getCountryAndNeighbour = function (country) {
+//   //AJAX Call Country 1
+//   const request = new XMLHttpRequest();
+//   request.open('GET', `https://restcountries.com/v2/name/${country}`);
+//   request.send();
+
+//   request.addEventListener('load', function () {
+//     const [data] = JSON.parse(this.responseText);
+//     console.log(data);
+
+//     //Render Country 1
+//     renderCountry(data);
+
+//     //Render Country 2
+//     const neighbour = data.borders?.[0];
+//     if (!neighbour) return;
+
+//     const request2 = new XMLHttpRequest();
+//     request2.open('GET', `https://restcountries.com/v2/alpha/${neighbour}`);
+//     request2.send();
+
+//     request2.addEventListener('load', function () {
+//       const data2 = JSON.parse(this.responseText);
+//       console.log(data2);
+
+//       renderCountry(data2, 'neighbour');
+//     });
+//   });
+// };
+
+// getCountryAndNeighbour('Germany');
